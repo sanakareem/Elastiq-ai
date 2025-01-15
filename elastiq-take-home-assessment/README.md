@@ -29,7 +29,8 @@ A full-stack Python web application that analyzes movie reviews using Cohere's A
 
 1. **Clone the Repository**
 
-git clone https://github.com/your-username/elastiq-take-home-assessment.git
+git clone https://github.com/sanakareem/Elastiq-ai.git
+cd Elastiq-ai
 cd elastiq-take-home-assessment
 
 Backend Setup
