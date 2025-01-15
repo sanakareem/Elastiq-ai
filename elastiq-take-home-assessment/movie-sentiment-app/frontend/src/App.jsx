@@ -14,36 +14,67 @@ function App() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`${API_URL}/reviews/`);
+      console.log('Fetching reviews from:', `${API_URL}/reviews/`); 
+      
+      const response = await fetch(`${API_URL}/reviews/`, {
+        headers: {
+          'Accept': 'application/json',
+          'Origin': window.location.origin
+        },
+        mode: 'cors',
+        credentials: 'include'
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
       const data = await response.json();
+      console.log('Fetched reviews:', data); 
       setReviews(data);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
   };
 
-  useEffect(() => {
-    fetchReviews();
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
+      console.log('Attempting to send request to:', `${API_URL}/reviews/`); // Debug log
+      
       const response = await fetch(`${API_URL}/reviews/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin
         },
         body: JSON.stringify({ text: review }),
-        mode: 'cors'  
+        mode: 'cors',
+        credentials: 'include'
       });
+  
+      console.log('Response status:', response.status); 
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Error response:', errorData); 
+        throw new Error(errorData?.detail || `HTTP error! status: ${response.status}`);
+      }
+  
       const data = await response.json();
+      console.log('Received data:', data); 
+      
+      if (!data || !data.sentiment) {
+        throw new Error('Invalid response data');
+      }
+  
       setResult(data);
-      fetchReviews(); 
+      await fetchReviews(); 
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error analyzing sentiment. Please try again.');  
+      console.error('Detailed error:', error); 
+      alert(`Error analyzing sentiment: ${error.message}. Please try again.`);
     } finally {
       setLoading(false);
     }
