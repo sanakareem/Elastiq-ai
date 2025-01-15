@@ -14,7 +14,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # React dev server
         "http://localhost:3000",  # Production build
-        "http://172.18.0.3:5173"  # Docker network
+        "http://172.18.0.3:5173",  # Docker network
+        "https://frontend-service-utm5.onrender.com",  # Render frontend URL
+        "https://elastiq-ai-frontend.onrender.com"     # Alternative Render frontend URL
     ],
     allow_credentials=True,
     allow_methods=["*"],

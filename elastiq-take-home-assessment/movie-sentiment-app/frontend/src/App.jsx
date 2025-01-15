@@ -1,10 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
   const [review, setReview] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Fetch reviews for the table
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/reviews/');
+      const data = await response.json();
+      setReviews(data);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,99 +31,132 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
         body: JSON.stringify({ text: review }),
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
       const data = await response.json();
       setResult(data);
+      fetchReviews(); 
     } catch (error) {
       console.error('Error:', error);
-      alert('Error analyzing sentiment. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getSentimentColor = (sentiment) => {
-    switch (sentiment?.toLowerCase()) {
-      case 'positive': return 'text-green-600';
-      case 'negative': return 'text-red-600';
-      case 'neutral': return 'text-blue-600';
-      default: return 'text-gray-600';
-    }
-  };
+  const filteredReviews = reviews.filter(review =>
+    review.text.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Movie Review Sentiment Analysis
-          </h1>
-          <p className="text-gray-300">
-            Enter your movie review below to analyze its sentiment
-          </p>
-        </div>
+    <div className="max-w-5xl mx-auto p-6">
+      {/* Sentiment Analysis Section (UI-1) */}
+      <section className="mb-12">
+        <h1 className="text-4xl font-semibold text-blue-600 mb-4">
+          Analyze sentiment
+        </h1>
+        <p className="text-gray-600 mb-8">
+          Detect the general sentiment expressed in a movie review by using LLM as NLP classifier.
+        </p>
 
-        <div className="bg-white rounded-lg shadow-xl p-6 mb-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="review" className="block text-sm font-medium text-gray-700">
-                Your Review
-              </label>
-              <div className="mt-1">
-                <textarea
-                  id="review"
-                  rows="4"
-                  className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border border-gray-300 rounded-md p-2"
-                  value={review}
-                  onChange={(e) => setReview(e.target.value)}
-                  placeholder="Type your movie review here..."
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                {loading ? 'Analyzing...' : 'Analyze Sentiment'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <h2 className="text-3xl text-blue-600 mb-4">movie review</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <textarea
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            className="w-full p-4 border rounded-md bg-gray-50"
+            rows="6"
+            placeholder="Type or paste your movie review here..."
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Analyzing...' : 'Analyze Sentiment'}
+          </button>
+        </form>
 
         {result && (
-          <div className="bg-white rounded-lg shadow-xl p-6 animate-fade-in">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Analysis Result</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-500">Sentiment</h3>
-                <p className={`mt-1 text-2xl font-semibold ${getSentimentColor(result.sentiment)}`}>
-                  {result.sentiment}
-                </p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-500">Confidence</h3>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {(result.confidence * 100).toFixed(1)}%
-                </p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-500">Review</h3>
-              <p className="mt-1 text-gray-900">{result.text}</p>
-            </div>
+          <div className="mt-8 p-6 bg-white rounded-lg shadow">
+            <p className="text-lg mb-2">
+              This seems like a{' '}
+              <span className="font-medium text-green-600">
+                {result.sentiment.toLowerCase()}
+              </span>{' '}
+              review. 😊
+            </p>
+            <p>
+              Sentiment Score:{' '}
+              <span className="font-medium text-green-600">
+                {(result.confidence * 100).toFixed(1)}% {result.sentiment}
+              </span>
+            </p>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* Review History Section (UI-2) */}
+      <section className="mt-12">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">Sentiment Analysis History</h2>
+          <div className="flex items-center">
+            <span className="mr-2">Search:</span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border rounded-md px-3 py-1"
+              placeholder="Filter reviews..."
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-800 text-white">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Review
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Sentiment
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredReviews.map((review, index) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-normal">
+                    <div className="text-sm text-gray-900">{review.text}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full 
+                      ${review.sentiment === 'Positive' ? 'bg-green-100 text-green-800' : 
+                        review.sentiment === 'Negative' ? 'bg-red-100 text-red-800' : 
+                        'bg-gray-100 text-gray-800'}`}>
+                      {review.sentiment}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-700">
+            Showing {filteredReviews.length} entries
+          </div>
+          <div className="flex space-x-2">
+            <button className="px-3 py-1 border rounded">Previous</button>
+            <button className="px-3 py-1 border rounded bg-blue-600 text-white">1</button>
+            <button className="px-3 py-1 border rounded">Next</button>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
