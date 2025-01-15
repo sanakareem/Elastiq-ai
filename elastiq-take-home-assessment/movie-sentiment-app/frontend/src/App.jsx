@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
+const API_URL = window.location.hostname === 'frontend-service-utm5.onrender.com' 
+  ? 'https://elastiq-ai-backend.onrender.com'
+  : 'http://localhost:8000';
+
 function App() {
   const [review, setReview] = useState('');
   const [result, setResult] = useState(null);
@@ -8,10 +12,9 @@ function App() {
   const [reviews, setReviews] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch reviews for the table
   const fetchReviews = async () => {
     try {
-      const response = await fetch('http://localhost:8000/reviews/');
+      const response = await fetch(`${API_URL}/reviews/`);
       const data = await response.json();
       setReviews(data);
     } catch (error) {
@@ -27,18 +30,20 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/reviews/', {
+      const response = await fetch(`${API_URL}/reviews/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ text: review }),
+        mode: 'cors'  
       });
       const data = await response.json();
       setResult(data);
       fetchReviews(); 
     } catch (error) {
       console.error('Error:', error);
+      alert('Error analyzing sentiment. Please try again.');  
     } finally {
       setLoading(false);
     }
